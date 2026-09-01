@@ -45,6 +45,26 @@
 
     --color-primary: #D50057; /* alias usado por el motor genérico (acento UI) */
 
+    /* ======================================================================
+       TOKENS — Breadcrumb (nodo del átomo Link 1119:154 y set Breadcrumb
+       17382:5444, archivo 3.3.5-Breadcrumb). Auditados contra boundVariables
+       reales vía Variables API, no contra el hex de fallback del código
+       generado. Sin drift encontrado entre fallback y valor resuelto.
+       ⚠️ --bc-color-font-soft (Color/Font/Soft, #666e77) NO coincide con
+       --color-font-soft ya definido arriba para Tabs (#586979). Son el mismo
+       nombre de rol pero valores distintos leídos directo de cada componente,
+       posible drift real entre Tabs y Breadcrumb que vale la pena confirmar
+       contra la auditoría de Temas Globales Color. Por eso uso variables
+       separadas con prefijo bc- en vez de reusar/pisar las de Tabs. */
+    --bc-color-font-link: #005D97;         /* real — Color/Font/Link (Past page Default) */
+    --bc-color-font-link-strong: #06304B;  /* real — Color/Font/Link-Strong (Hover y Focus, mismo color en ambos) */
+    --bc-color-font-link-soft: #33BBE0;    /* real — Color/Font/Link-Soft (Pressed, es más claro, no más oscuro) */
+    --bc-color-font-disable: #666E77;      /* real — Color/Font/Disable (variante "No page") */
+    --bc-color-font-soft: #666E77;         /* real — Color/Font/Soft (Divider y Overflow "...") ⚠️ ver nota arriba */
+    --bc-color-border-link-strong: #06304B;/* real — Color/Border/Link-Strong (anillo de foco) */
+    --bc-space-xxx-sm: 2px;                /* real — Space/xxx-sm, padding vertical de cada link */
+    --bc-border-weight-md: 1px;            /* real — Border/Weight/md, grosor del anillo de foco */
+
     --engine-panel-bg: #1C1C1C;
     --engine-panel-fg: #E8E8E6;
     --engine-accent: #D50057;
@@ -71,7 +91,7 @@
     border-bottom: 1px solid var(--color-border-default);
     background: var(--color-surface);
   }
-  header h1 { margin: 0 0 4px; font-size: 18px; color: var(--color-primary); }
+  header h1 { margin: 0 0 4px; font-size: 24px; font-family: 'Poppins', 'Segoe UI', sans-serif; font-weight: 600; color: var(--color-primary); }
   header p { margin: 0; font-size: 13px; color: var(--color-font-soft); }
 
   .layout {
@@ -532,6 +552,115 @@
     color: var(--color-font-disable-soft);
     cursor: default;
     pointer-events: none;
+  }
+
+  /* ======================================================================
+     COMPONENTE — Breadcrumb (esto es lo único específico de Breadcrumb
+     en todo el CSS). Estructura: grupos [Link + Divider] en fila, terminando
+     siempre en Current page (no interactivo). En Mobile se colapsa a un solo
+     link con ícono de flecha hacia atrás.
+     ====================================================================== */
+  .breadcrumb-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: var(--space-xsm);
+  }
+
+  .bc-item-group {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: var(--space-xsm);
+  }
+
+  .bc-link {
+    display: inline-flex;
+    align-items: flex-start;
+    box-sizing: border-box;
+    padding: var(--bc-space-xxx-sm) var(--space-xxsm);
+    border: var(--bc-border-weight-md) solid transparent;
+    border-radius: var(--radius-xsm);
+    background: none;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-size: 16px;
+    line-height: 22px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Past page (Default / Hover / Focus / Pressed) — orden importa, cada
+     estado pisa al anterior según prioridad real de la especificación. */
+  .bc-link.bc-link-default {
+    color: var(--bc-color-font-link);
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .bc-link.bc-link-default:hover {
+    color: var(--bc-color-font-link-strong);
+  }
+  .bc-link.bc-link-default:focus-visible {
+    outline: none;
+    color: var(--bc-color-font-link-strong);
+    border-color: var(--bc-color-border-link-strong);
+  }
+  .bc-link.bc-link-default:active {
+    color: var(--bc-color-font-link-soft);
+  }
+
+  /* "No page" — item de jerarquía marcado como no navegable a propósito.
+     ⚠️ Esta variante no aparece en ningún ejemplo de la documentación actual
+     del componente (Anatomía solo lista Home link, Divider, Links de
+     jerarquía, Página actual, Ellipsis y Mobile) — se deja disponible aquí
+     como control opcional, pendiente de confirmar su uso real con diseño. */
+  .bc-link.bc-link-nopage {
+    color: var(--bc-color-font-disable);
+    font-weight: 400;
+    text-decoration: none;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .bc-current {
+    display: inline-flex;
+    align-items: flex-start;
+    box-sizing: border-box;
+    padding: var(--bc-space-xxx-sm) var(--space-xxsm);
+    color: var(--color-font-default);
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 22px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .bc-divider,
+  .bc-overflow {
+    color: var(--bc-color-font-soft);
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-size: 16px;
+    line-height: 22px;
+    text-align: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .bc-mobile-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xsm);
+    flex-shrink: 0;
+  }
+  .bc-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--bc-color-font-link);
   }
 
 </style>
@@ -1030,6 +1159,282 @@ const tabsConfig = {
 };
 
 /* ==========================================================================
+   CONFIG DEL COMPONENTE — Breadcrumb
+   Fuente: 3.3.5-Breadcrumb (átomo Link 1119:154, set Breadcrumb 17382:5444,
+   documentación 17285:1418). A diferencia de Tabs, aquí el "Device" no es
+   una elección manual: la doc dice explícitamente que debe resolverse según
+   el espacio disponible del contenedor ("full trail → overflow trail, solo
+   aplica con 3+ niveles de profundidad → Mobile"), así que el render() de
+   abajo mide el ancho real de cada variante contra el contenedor y aplica
+   esa cascada, en vez de exponer un dropdown de Device.
+   ========================================================================== */
+
+// Ícono real del componente (chevron_left, nodo 17382:5476). currentColor
+// para heredar el color del link sin swapear asset.
+const CHEVRON_LEFT_SVG = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+  '<path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+  '</svg>';
+
+// Sets de nombres de página para el control "Longitud de texto". El set
+// "Muy largo" está a propósito por encima de 40 caracteres visibles para
+// poder demostrar la regla de truncamiento documentada (Anatomía + tabla de
+// Propiedades: "si el contenido es mayor a 40 caracteres visibles, el texto
+// sobrante se truncará con elipsis").
+const BC_LABEL_SETS = {
+  'Corto': ['Productos', 'Cuentas', 'Tarjetas', 'Pagos', 'Historial', 'Ajustes', 'Soporte', 'Seguridad', 'Más'],
+  'Medio': ['Mis productos', 'Mis cuentas', 'Mis tarjetas', 'Mis pagos', 'Mi historial', 'Mis ajustes', 'Centro de soporte', 'Mi seguridad', 'Más opciones'],
+  'Muy largo': [
+    'Catálogo completo de productos financieros disponibles',
+    'Información detallada de todas mis cuentas activas',
+    'Historial completo de tarjetas asociadas a mi perfil',
+    'Programación y seguimiento de todos mis pagos recurrentes',
+    'Historial detallado de movimientos y transacciones',
+    'Ajustes avanzados de seguridad y preferencias de cuenta',
+    'Centro de soporte y ayuda para todos los productos',
+    'Configuración de seguridad y métodos de verificación',
+    'Más opciones y configuración adicional del perfil'
+  ]
+};
+
+// Regla de truncamiento documentada: 40 caracteres visibles, no es una regla
+// de overflow por CSS/ancho como en Tabs.
+function bcTruncate(text) {
+  if (!text) return text;
+  return text.length > 40 ? text.slice(0, 40) + '...' : text;
+}
+
+const breadcrumbConfig = {
+  defaultState() {
+    return {
+      containerWidth: 900,
+      pageCount: 2,
+      labelLength: 'Corto',
+      customLabels: Array(9).fill(''),
+      noPageLinks: Array(9).fill(false)
+    };
+  },
+
+  viewportRange: {
+    min: 240,
+    max: 1600,
+    marks: [
+      { value: 320, label: '320 móvil' },
+      { value: 768, label: '768 tablet' },
+      { value: 1024, label: '1024' },
+      { value: 1440, label: '1440 desktop' }
+    ]
+  },
+
+  perItemLabels: {
+    key: 'customLabels',
+    label: 'Niveles intermedios (Page 2..N)',
+    count: (s) => s.pageCount,
+    placeholder: (i) => 'Page ' + (i + 2),
+    toggles: [
+      { key: 'noPageLinks', title: 'No page (no navegable)', default: false }
+    ]
+  },
+
+  controls: [
+    {
+      key: 'pageCount',
+      type: 'select',
+      label: 'Cantidad de niveles intermedios',
+      isNumeric: true,
+      options: Array.from({ length: 10 }, (_, i) => i) // 0 a 9, igual que Page 2..Page 9 en Figma
+    },
+    { key: 'labelLength', type: 'select', label: 'Longitud de texto', options: ['Corto', 'Medio', 'Muy largo'] }
+  ],
+
+  presets: [
+    { label: 'Full trail (cabe completo)', state: { containerWidth: 900, pageCount: 2, labelLength: 'Corto', noPageLinks: Array(9).fill(false) } },
+    { label: 'Overflow trail (3+ niveles, no cabe)', state: { containerWidth: 480, pageCount: 3, labelLength: 'Corto', noPageLinks: Array(9).fill(false) } },
+    { label: 'Mobile (ni overflow cabe)', state: { containerWidth: 280, pageCount: 5, labelLength: 'Medio', noPageLinks: Array(9).fill(false) } },
+    { label: 'Mobile forzado (solo 2 niveles)', state: { containerWidth: 320, pageCount: 0, labelLength: 'Corto', noPageLinks: Array(9).fill(false) } },
+    { label: 'Truncamiento a 40 caracteres', state: { containerWidth: 1400, pageCount: 2, labelLength: 'Muy largo', noPageLinks: Array(9).fill(false) } },
+    { label: 'Item "No page" (no navegable)', state: { containerWidth: 900, pageCount: 3, labelLength: 'Corto', noPageLinks: [false, true, false, false, false, false, false, false, false] } }
+  ],
+
+  describeViewport(state) {
+    let sizeLabel;
+    if (state.containerWidth <= 375) sizeLabel = 'móvil (' + state.containerWidth + 'px)';
+    else if (state.containerWidth <= 768) sizeLabel = 'tablet vertical (' + state.containerWidth + 'px)';
+    else if (state.containerWidth <= 1024) sizeLabel = 'tablet horizontal (' + state.containerWidth + 'px)';
+    else sizeLabel = 'desktop (' + state.containerWidth + 'px)';
+    const diag = state._bcDiag;
+    return sizeLabel + (diag && diag.deviceUsed ? ' · ' + diag.deviceUsed : '');
+  },
+
+  render(state, mount) {
+    mount.innerHTML = '';
+
+    const defaultLabels = BC_LABEL_SETS[state.labelLength];
+    const customLabels = state.customLabels || [];
+    const noPageLinks = state.noPageLinks || [];
+    const homeLabel = 'Inicio';
+    const currentLabel = 'Página actual';
+
+    const pages = [];
+    for (let i = 0; i < state.pageCount; i++) {
+      const custom = (customLabels[i] || '').trim();
+      const raw = custom || defaultLabels[i % defaultLabels.length];
+      pages.push({
+        raw: raw,
+        label: bcTruncate(raw),
+        truncated: raw.length > 40,
+        noPage: !!noPageLinks[i]
+      });
+    }
+    const totalLevels = 2 + pages.length; // Home + intermedios + Current
+
+    // ---- constructores de cada variante (closures sobre pages/labels) ----
+    function bcLinkEl(text, opts) {
+      opts = opts || {};
+      const el = document.createElement(opts.noPage ? 'span' : 'button');
+      el.className = 'bc-link ' + (opts.noPage ? 'bc-link-nopage' : 'bc-link-default');
+      el.textContent = text;
+      el.title = text;
+      if (!opts.noPage) el.type = 'button';
+      else el.setAttribute('aria-disabled', 'true');
+      return el;
+    }
+    function bcDividerEl() {
+      const el = document.createElement('span');
+      el.className = 'bc-divider';
+      el.textContent = '/';
+      return el;
+    }
+    function bcOverflowEl() {
+      const el = document.createElement('span');
+      el.className = 'bc-overflow';
+      el.textContent = '...';
+      return el;
+    }
+    function bcCurrentEl(text) {
+      const el = document.createElement('span');
+      el.className = 'bc-current';
+      el.setAttribute('aria-current', 'page');
+      el.textContent = text;
+      return el;
+    }
+    function bcGroup(linkEl) {
+      const g = document.createElement('div');
+      g.className = 'bc-item-group';
+      g.appendChild(linkEl);
+      g.appendChild(bcDividerEl());
+      return g;
+    }
+
+    function buildFullTrail() {
+      const bar = document.createElement('div');
+      bar.className = 'breadcrumb-bar';
+      bar.id = 'bcBar';
+      bar.appendChild(bcGroup(bcLinkEl(homeLabel)));
+      pages.forEach(p => bar.appendChild(bcGroup(bcLinkEl(p.label, { noPage: p.noPage }))));
+      bar.appendChild(bcCurrentEl(currentLabel));
+      return bar;
+    }
+
+    function buildOverflowTrail() {
+      const bar = document.createElement('div');
+      bar.className = 'breadcrumb-bar';
+      bar.id = 'bcBar';
+      bar.appendChild(bcGroup(bcLinkEl(homeLabel)));
+      bar.appendChild(bcGroup(bcOverflowEl()));
+      const parent = pages[pages.length - 1];
+      bar.appendChild(bcGroup(bcLinkEl(parent.label, { noPage: parent.noPage })));
+      bar.appendChild(bcCurrentEl(currentLabel));
+      return bar;
+    }
+
+    let mobileTruncated = false;
+    function buildMobile() {
+      const bar = document.createElement('div');
+      bar.className = 'breadcrumb-bar';
+      bar.id = 'bcBar';
+      const group = document.createElement('div');
+      group.className = 'bc-mobile-link';
+      const chevron = document.createElement('span');
+      chevron.className = 'bc-chevron';
+      chevron.innerHTML = CHEVRON_LEFT_SVG;
+      group.appendChild(chevron);
+      const parentRaw = pages.length >= 1 ? pages[pages.length - 1].raw : homeLabel;
+      const fullText = 'Volver a ' + parentRaw;
+      mobileTruncated = fullText.length > 40;
+      group.appendChild(bcLinkEl(bcTruncate(fullText)));
+      bar.appendChild(group);
+      return bar;
+    }
+
+    // ---- cascada real: mide ancho natural vs. contenedor disponible ----
+    const fullBar = buildFullTrail();
+    mount.appendChild(fullBar);
+    const fullWidth = fullBar.scrollWidth;
+    const available = mount.clientWidth;
+
+    let deviceUsed, overflowWidth = null, mobileReason = null;
+
+    if (fullWidth <= available) {
+      deviceUsed = 'Desktop - full trail';
+    } else {
+      mount.removeChild(fullBar);
+      if (pages.length >= 1) {
+        const overflowBar = buildOverflowTrail();
+        mount.appendChild(overflowBar);
+        overflowWidth = overflowBar.scrollWidth;
+        if (overflowWidth <= available) {
+          deviceUsed = 'Desktop - overflow trail';
+        } else {
+          mount.removeChild(overflowBar);
+          deviceUsed = 'Mobile';
+          mobileReason = 'El overflow trail tampoco cabe en el contenedor';
+          mount.appendChild(buildMobile());
+        }
+      } else {
+        deviceUsed = 'Mobile';
+        mobileReason = 'Solo hay 2 niveles de profundidad (Home + Current): la cascada salta overflow trail';
+        mount.appendChild(buildMobile());
+      }
+    }
+
+    state._bcDiag = {
+      deviceUsed: deviceUsed,
+      totalLevels: totalLevels,
+      fullWidth: fullWidth,
+      overflowWidth: overflowWidth,
+      available: available,
+      mobileReason: mobileReason,
+      anyTruncated: pages.some(p => p.truncated) || (deviceUsed === 'Mobile' && mobileTruncated)
+    };
+  },
+
+  computeLiveValues(state, mount) {
+    const diag = state._bcDiag || {};
+    const rows = [];
+    rows.push({ label: 'Device aplicado (cascada real)', value: diag.deviceUsed || 'sin calcular' });
+    rows.push({ label: 'Niveles de profundidad', value: diag.totalLevels });
+    rows.push({ label: 'Ancho disponible (contenedor)', value: (diag.available || 0) + 'px' });
+    rows.push({
+      label: 'Ancho medido / Full trail',
+      value: (diag.fullWidth || 0) + 'px',
+      warn: diag.deviceUsed !== 'Desktop - full trail'
+    });
+    if (diag.overflowWidth !== null && diag.overflowWidth !== undefined) {
+      rows.push({
+        label: 'Ancho medido / Overflow trail',
+        value: diag.overflowWidth + 'px',
+        warn: diag.deviceUsed !== 'Desktop - overflow trail'
+      });
+    }
+    if (diag.mobileReason) {
+      rows.push({ label: 'Motivo de Mobile', value: diag.mobileReason, warn: true });
+    }
+    rows.push({ label: 'Texto truncado (40 chars)', value: diag.anyTruncated ? 'sí' : 'no', warn: diag.anyTruncated });
+    return rows;
+  }
+};
+
+/* ==========================================================================
    VENTANA DE PREVIEW — fondo ajustable (motor, genérico)
    Vive fuera del ciclo de vida del componente activo: no se resetea al
    cambiar de componente en el sidebar de navegación.
@@ -1074,7 +1479,8 @@ function buildViewportBgPicker() {
    El sidebar de navegación se genera solo a partir de este objeto.
    ========================================================================== */
 const componentRegistry = {
-  'Tabs': tabsConfig
+  'Tabs': tabsConfig,
+  'Breadcrumb': breadcrumbConfig
   // Próximo componente: 'Chips': chipsConfig,
 };
 
