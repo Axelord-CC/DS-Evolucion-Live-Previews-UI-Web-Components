@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<title>DS Evolucion - Live Preview Web UI Components</title>
+<style>
+  /* ======================================================================
+     TOKENS
+     Extraídos directo del componente maestro (node 17915:2087) y del átomo
+     de estados .Tabs/single-tab (node 1121:234) vía Figma MCP.
+     ⚠️ --color-font-default y --color-font-soft aquí salen ligeramente
+     distintos a los que traíamos anotados de la auditoría global anterior
+     (#252A2D/#5E6A71 vs los #292D32/#586979 leídos ahora directo del
+     componente). Dejo los leídos directo del componente porque son los que
+     de verdad están enlazados aquí, pero vale la pena que lo confirmes
+     contra la auditoría de Temas Globales Color, puede que sea drift real.
+     ====================================================================== */
+  :root {
+    --color-bg-body: #F3F3F2;               /* real, sin cambio */
+    --color-surface: #FFFFFF;               /* real, sin cambio */
+    --color-border-default: #D8DADA;        /* real, Steel/10 — confirmado en Divider de Tabs */
+
+    --color-font-default: #292D32;          /* real — color/font/default (Hover y Focus) */
+    --color-font-soft: #586979;             /* real — color/font/soft (Inactive) */
+    --color-font-primary: #D50057;          /* real — color/font/primary (Active) */
+    --color-font-primary-strong: #910048;   /* real — color/font/primary-strong (Pressed) */
+    --color-font-disable-soft: #BAC8D7;     /* real — color/font/disable-soft (Disabled) */
+
+    --color-bg-primary-default: #D50057;    /* real — indicador en Active */
+    --color-bg-primary-strong: #910048;     /* real — indicador en Pressed */
+    --color-bg-body-press: rgba(153,158,165,0.1); /* real — fondo del tab en Pressed */
+    --color-border-stronger: #292D32;       /* real — anillo de foco */
+
+    --radius-xsm: 4px;   /* real — border/radius/x-sm, esquinas del indicador */
+    --radius-sm: 8px;    /* real — border/radius/sm, anillo de foco */
+    --space-xxsm: 4px;   /* real — space/xx-sm (el token de Figma es 4px) */
+    --tab-icon-gap: 8px; /* ⚠️ ajuste intencional pedido por Axel: 8px en vez del token real de 4px */
+    --space-xsm: 8px;    /* real — space/x-sm, padding interno de cada tab */
+    --space-md: 16px;    /* real — space/md, gap entre tabs (Fixed) y padding del contenedor */
+    --space-xlg: 24px;   /* real — space/x-lg, gap entre tabs (Scrolling) */
+
+    --color-primary: #D50057; /* alias usado por el motor genérico (acento UI) */
+
+    --engine-panel-bg: #1C1C1C;
+    --engine-panel-fg: #E8E8E6;
+    --engine-accent: #D50057;
+    --engine-warn: #FDBA74;
+    --engine-mono: 'SFMono-Regular', Consolas, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    background: var(--color-bg-body);
+    color: var(--color-font-default);
+  }
+
+  header {
+    flex-shrink: 0;
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid var(--color-border-default);
+    background: var(--color-surface);
+  }
+  header h1 { margin: 0 0 4px; font-size: 18px; }
+  header p { margin: 0; font-size: 13px; color: var(--color-font-soft); }
+
+  .layout {
+    display: flex;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+    gap: 0;
+  }
+
+  /* ---- Sidebar de navegación de componentes (nuevo, motor genérico) ---- */
+  .nav-sidebar {
+    width: 180px;
+    flex: 0 0 180px;
+    background: #141414;
+    color: var(--engine-panel-fg);
+    height: 100%;
+    overflow-y: auto;
+    padding: 20px 14px;
+    font-size: 13px;
+    border-right: 1px solid #2a2a28;
+  }
+  .nav-sidebar h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9a9a97;
+    margin: 0 0 12px;
+  }
+  .nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .nav-list button {
+    text-align: left;
+    padding: 9px 10px;
+    background: transparent;
+    color: var(--engine-panel-fg);
+    border: none;
+    border-left: 3px solid transparent;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .nav-list button:hover { background: #1f1f1d; }
+  .nav-list button.active {
+    background: #1f1f1d;
+    border-left-color: var(--engine-accent);
+    color: var(--engine-accent);
+    font-weight: 600;
+  }
+
+  /* ---- Panel de controles (motor, genérico) ---- */
+  .controls-panel {
+    width: 300px;
+    flex: 0 0 300px;
+    background: var(--engine-panel-bg);
+    color: var(--engine-panel-fg);
+    height: 100%;
+    overflow-y: auto;
+    padding: 20px;
+    font-size: 13px;
+  }
+  .controls-panel-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0 0 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #3a3a38;
+  }
+  .controls-panel h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9a9a97;
+    margin: 20px 0 10px;
+  }
+  .controls-panel h2:first-child { margin-top: 0; }
+
+  .engine-select {
+    width: 100%;
+    padding: 9px 10px;
+    background: #262624;
+    color: var(--engine-panel-fg);
+    border: 1px solid #3a3a38;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%239a9a97'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  .engine-select:hover { border-color: var(--engine-accent); }
+  .engine-select:focus { outline: none; border-color: var(--engine-accent); }
+
+  .slider-row { margin-bottom: 4px; }
+  .slider-row label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: var(--color-font-default);
+  }
+  .slider-row label span.value {
+    font-family: var(--engine-mono);
+    color: var(--engine-accent);
+  }
+  input[type="range"] { width: 100%; accent-color: var(--engine-accent); }
+
+  .preset-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .preset-list button {
+    text-align: left;
+    padding: 9px 10px;
+    background: #262624;
+    color: var(--engine-panel-fg);
+    border: 1px solid #3a3a38;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .preset-list button:hover { border-color: var(--engine-accent); }
+
+  .per-item-text-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .per-item-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid #2a2a28;
+  }
+  .per-item-block:last-child { border-bottom: none; padding-bottom: 0; }
+  .per-item-block:first-child { padding-top: 0; }
+
+  .per-item-header-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .per-item-text-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toggle-switch-wrap {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .toggle-switch {
+    position: relative;
+    width: 30px;
+    height: 17px;
+    flex-shrink: 0;
+  }
+  .toggle-switch input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: #3a3a38;
+    border-radius: 999px;
+    transition: background 0.15s ease;
+  }
+  .toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #e8e8e6;
+    transition: transform 0.15s ease;
+  }
+  .toggle-switch input:checked ~ .toggle-track { background: var(--engine-accent); }
+  .toggle-switch input:checked ~ .toggle-track .toggle-thumb { transform: translateX(13px); }
+  .toggle-switch-label {
+    font-size: 12px;
+    color: #c9c9c6;
+  }
+
+  .per-item-text-index {
+    width: 14px;
+    flex-shrink: 0;
+    color: #9a9a97;
+    font-family: var(--engine-mono);
+    font-size: 11px;
+  }
+  .engine-text-input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    background: #262624;
+    color: var(--engine-panel-fg);
+    border: 1px solid #3a3a38;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  .engine-text-input::placeholder { color: #6b6b68; }
+  .engine-text-input:focus { outline: none; border-color: var(--engine-accent); }
+
+  .live-values {
+    margin-top: 20px;
+    padding-top: 14px;
+    border-top: 1px solid #3a3a38;
+    font-family: var(--engine-mono);
+    font-size: 11.5px;
+    line-height: 1.7;
+  }
+  .live-values .row { display: flex; justify-content: space-between; gap: 8px; }
+  .live-values .k { color: #9a9a97; }
+  .live-values .v { color: var(--engine-accent); text-align: right; }
+  .live-values .v.warn { color: var(--engine-warn); }
+
+  /* ---- Zona de preview ---- */
+  .preview-zone {
+    flex: 1;
+    height: 100%;
+    overflow-y: hidden;
+    overflow-x: auto;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .width-ruler-wrap {
+    width: 100%;
+    max-width: 1600px;
+    margin-bottom: 20px;
+  }
+  .ruler-marks {
+    position: relative;
+    height: 14px;
+    margin-top: 4px;
+  }
+  .ruler-marks span {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--color-font-soft);
+    font-family: var(--engine-mono);
+    white-space: nowrap;
+  }
+  .ruler-marks span:first-child { transform: translateX(0); }
+  .ruler-marks span:last-child { transform: translateX(-100%); }
+
+  .preview-frame-outer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  .preview-frame {
+    transition: width 0.05s linear;
+  }
+  .preview-frame-label {
+    text-align: center;
+    font-size: 11px;
+    color: var(--color-font-soft);
+    margin-top: 10px;
+    font-family: var(--engine-mono);
+  }
+
+  /* ---- Ventana envolvente del live preview (motor, genérico) ----
+     Le da aire alrededor del componente y sirve para probarlo contra
+     distintos fondos de página, no solo el blanco de su propia superficie. */
+  .viewport-window {
+    position: relative;
+    width: 100%;
+    max-width: 1600px;
+    padding: 56px 40px;
+    border-radius: 14px;
+    border: 1px solid var(--color-border-default);
+    background: #FFFFFF;
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+    transition: background 0.15s ease;
+  }
+
+  .viewport-edge-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    border-left: 1px dashed var(--color-border-default);
+    pointer-events: none;
+    transition: left 0.05s linear;
+  }
+
+  .viewport-bg-label {
+    width: 100%;
+    max-width: 1600px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-font-soft);
+    margin-top: 20px;
+    margin-bottom: 8px;
+  }
+  .viewport-bg-picker {
+    width: 100%;
+    max-width: 1600px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .viewport-bg-swatch {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border-default);
+    background: var(--color-surface);
+    cursor: pointer;
+    font-size: 11.5px;
+    color: var(--color-font-soft);
+    font-family: var(--engine-mono);
+  }
+  .viewport-bg-swatch:hover { border-color: var(--engine-accent); }
+  .viewport-bg-swatch.active {
+    border-color: var(--engine-accent);
+    color: var(--color-font-default);
+    font-weight: 600;
+  }
+  .viewport-bg-swatch .swatch-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    border: 1px solid var(--color-border-default);
+    flex-shrink: 0;
+  }
+
+  /* ======================================================================
+     COMPONENTE — Tabs (esto es lo único específico de Tabs en todo el CSS)
+     ====================================================================== */
+  .tabs-bar {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--color-border-default);
+    padding: 0 var(--space-md);
+    gap: var(--space-md);
+  }
+  .tabs-bar.tabs-fixed {
+    justify-content: center;
+    width: 100%;
+    min-width: 288px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .tabs-bar.tabs-scrolling {
+    overflow-x: auto;
+    gap: var(--space-xlg);
+    scrollbar-width: none;    /* Firefox */
+    -ms-overflow-style: none; /* Edge legacy */
+  }
+  .tabs-bar.tabs-scrolling::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
+  .tab-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--tab-icon-gap);
+    min-width: 80px;
+    max-width: 280px;
+    padding: var(--space-xsm);
+    background: transparent;
+    border: none;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-size: 18px;
+    line-height: 24px;
+    font-weight: 400;
+    color: var(--color-font-soft);
+    cursor: pointer;
+    text-align: center;
+  }
+  .tabs-fixed .tab-item { flex: 1 1 0; }
+  .tabs-scrolling .tab-item { flex: 0 0 auto; width: max-content; }
+
+  .tab-label {
+    min-width: 0;
+    /* flex-grow en 0 a propósito: en Fixed tabs el tab-item se estira para
+       repartir el ancho total, y si el label también crece, el texto se
+       centra dentro de su propia caja estirada en vez de quedar pegado al
+       ícono. Con flex-grow 0, el grupo ícono+texto queda compacto y es ESE
+       grupo el que se centra dentro del tab (vía justify-content del padre). */
+    flex: 0 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tab-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    color: inherit;
+  }
+
+  .tab-indicator {
+    position: absolute;
+    left: var(--space-xsm);
+    right: var(--space-xsm);
+    bottom: 0;
+    height: 2px;
+    background: transparent;
+    border-radius: var(--radius-xsm) var(--radius-xsm) 0 0;
+  }
+
+  /* Orden importa: cada estado pisa al anterior según prioridad real de la especificación */
+  .tab-item:hover:not(.active) { color: var(--color-font-default); }
+
+  .tab-item:focus-visible {
+    outline: none;
+    color: var(--color-font-default);
+    border-radius: var(--radius-sm);
+    box-shadow: inset 0 0 0 2px var(--color-border-stronger);
+  }
+
+  .tab-item.active {
+    color: var(--color-font-primary);
+    font-weight: 600;
+  }
+  .tab-item.active .tab-indicator { background: var(--color-bg-primary-default); }
+
+  .tab-item:active {
+    background: var(--color-bg-body-press);
+    color: var(--color-font-primary-strong);
+    font-weight: 600;
+  }
+  .tab-item:active .tab-indicator { background: var(--color-bg-primary-strong); }
+
+  .tab-item.disabled {
+    color: var(--color-font-disable-soft);
+    cursor: default;
+    pointer-events: none;
+  }
+
+</style>
+</head>
+<body>
+
+  <header>
+    <h1 id="headerTitle">Design System Evolución 2.0 - Live Demos</h1>
+    <p>Live previews de componentes (responsive, variantes y casos límite)</p>
+  </header>
+
+  <div class="layout">
+    <div class="nav-sidebar" id="navSidebar"></div>
+    <div class="controls-panel" id="controlsPanel"></div>
+
+    <div class="preview-zone">
+      <div class="width-ruler-wrap">
+        <div class="slider-row">
+          <label>Ancho del contenedor <span class="value" id="widthValueLabel">600px</span></label>
+          <input type="range" id="widthSlider">
+        </div>
+        <div class="ruler-marks" id="rulerMarks"></div>
+      </div>
+
+      <div class="viewport-window" id="viewportWindow">
+        <div class="viewport-edge-line" id="edgeLineLeft"></div>
+        <div class="viewport-edge-line" id="edgeLineRight"></div>
+        <div class="preview-frame-outer">
+          <div class="preview-frame" id="previewFrame"><div id="componentMount"></div></div>
+        </div>
+      </div>
+      <div class="preview-frame-label" id="previewFrameLabel"></div>
+      <div class="viewport-bg-label">Color de fondo del preview</div>
+      <div class="viewport-bg-picker" id="viewportBgPicker"></div>
+    </div>
+  </div>
+
+<script>
+/* ==========================================================================
+   MOTOR GENÉRICO
+   No se toca al crear un demo nuevo. Lee "componentConfig" (definido abajo)
+   y genera controles, presets, panel de valores en vivo y el render loop.
+   ========================================================================== */
+
+const state = {};
+let componentConfig = null;
+
+function initEngine(config) {
+  componentConfig = config;
+  Object.assign(state, config.defaultState());
+  setupViewportRuler(config.viewportRange);
+  buildControlsPanel();
+  bindWidthSlider();
+  render();
+}
+
+function setupViewportRuler(range) {
+  const slider = document.getElementById('widthSlider');
+  slider.min = range.min;
+  slider.max = range.max;
+  slider.value = state.containerWidth;
+
+  document.getElementById('widthValueLabel').textContent = state.containerWidth + 'px';
+
+  const marksWrap = document.getElementById('rulerMarks');
+  marksWrap.innerHTML = '';
+  range.marks.forEach(mark => {
+    const span = document.createElement('span');
+    span.textContent = mark.label;
+    const pct = ((mark.value - range.min) / (range.max - range.min)) * 100;
+    span.style.left = pct + '%';
+    marksWrap.appendChild(span);
+  });
+}
+
+function buildControlsPanel() {
+  const panel = document.getElementById('controlsPanel');
+  panel.innerHTML = '';
+
+  const title = document.createElement('h1');
+  title.className = 'controls-panel-title';
+  title.textContent = activeComponentName;
+  panel.appendChild(title);
+
+  componentConfig.controls.forEach(ctrl => {
+    const h2 = document.createElement('h2');
+    h2.textContent = ctrl.label;
+    panel.appendChild(h2);
+
+    if (ctrl.type === 'select') {
+      const options = typeof ctrl.options === 'function' ? ctrl.options(state) : ctrl.options;
+
+      // Si el valor actual quedó fuera de las opciones válidas (ej. tabCount
+      // tras cambiar Distribution), lo clampeamos al último valor disponible.
+      if (!options.some(opt => String(opt) === String(state[ctrl.key]))) {
+        state[ctrl.key] = ctrl.isNumeric ? Number(options[options.length - 1]) : options[options.length - 1];
+      }
+
+      const select = document.createElement('select');
+      select.className = 'engine-select';
+      options.forEach(opt => {
+        const optionEl = document.createElement('option');
+        optionEl.value = opt;
+        optionEl.textContent = opt;
+        if (String(state[ctrl.key]) === String(opt)) optionEl.selected = true;
+        select.appendChild(optionEl);
+      });
+      select.addEventListener('change', (e) => {
+        state[ctrl.key] = ctrl.isNumeric ? Number(e.target.value) : e.target.value;
+        if (componentConfig.onChange) componentConfig.onChange(state, ctrl.key);
+        buildControlsPanel();
+        render();
+      });
+      panel.appendChild(select);
+    }
+  });
+
+  // Presets
+  const h2p = document.createElement('h2');
+  h2p.textContent = 'Casos límite';
+  panel.appendChild(h2p);
+  const presetList = document.createElement('div');
+  presetList.className = 'preset-list';
+  componentConfig.presets.forEach(preset => {
+    const btn = document.createElement('button');
+    btn.textContent = preset.label;
+    btn.addEventListener('click', () => {
+      if (componentConfig.perItemLabels) {
+        state[componentConfig.perItemLabels.key] = [];
+        (componentConfig.perItemLabels.toggles || []).forEach(t => {
+          state[t.key] = [];
+        });
+      }
+      Object.assign(state, preset.state);
+      document.getElementById('widthSlider').value = state.containerWidth;
+      document.getElementById('widthValueLabel').textContent = state.containerWidth + 'px';
+      buildControlsPanel();
+      render();
+    });
+    presetList.appendChild(btn);
+  });
+  panel.appendChild(presetList);
+
+  // Etiquetas por item (genérico: cualquier componente con conteo variable de
+  // elementos puede definir "perItemLabels" en su config y aparece aquí solo).
+  // Si además define "toggle", cada fila también trae un checkbox (ej. mostrar/
+  // ocultar ícono) junto al texto.
+  if (componentConfig.perItemLabels) {
+    const cfg = componentConfig.perItemLabels;
+    const count = typeof cfg.count === 'function' ? cfg.count(state) : cfg.count;
+    if (!Array.isArray(state[cfg.key])) state[cfg.key] = [];
+    (cfg.toggles || []).forEach(t => {
+      if (!Array.isArray(state[t.key])) state[t.key] = [];
+    });
+
+    const h2labels = document.createElement('h2');
+    h2labels.textContent = cfg.label;
+    panel.appendChild(h2labels);
+
+    const listWrap = document.createElement('div');
+    listWrap.className = 'per-item-text-list';
+    for (let i = 0; i < count; i++) {
+      const block = document.createElement('div');
+      block.className = 'per-item-block';
+
+      const headerRow = document.createElement('div');
+      headerRow.className = 'per-item-header-row';
+
+      const idx = document.createElement('span');
+      idx.className = 'per-item-text-index';
+      idx.textContent = (i + 1) + '.';
+      headerRow.appendChild(idx);
+
+      (cfg.toggles || []).forEach(toggleCfg => {
+        const toggleWrap = document.createElement('label');
+        toggleWrap.className = 'toggle-switch-wrap';
+
+        const toggleSwitch = document.createElement('span');
+        toggleSwitch.className = 'toggle-switch';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        const storedVal = state[toggleCfg.key][i];
+        const defaultVal = toggleCfg.default !== undefined ? toggleCfg.default : true;
+        checkbox.checked = storedVal === undefined ? defaultVal : storedVal;
+        checkbox.addEventListener('change', (e) => {
+          state[toggleCfg.key][i] = e.target.checked;
+          render();
+        });
+
+        const track = document.createElement('span');
+        track.className = 'toggle-track';
+        const thumb = document.createElement('span');
+        thumb.className = 'toggle-thumb';
+        track.appendChild(thumb);
+
+        toggleSwitch.appendChild(checkbox);
+        toggleSwitch.appendChild(track);
+
+        const toggleText = document.createElement('span');
+        toggleText.className = 'toggle-switch-label';
+        toggleText.textContent = toggleCfg.title || '';
+
+        toggleWrap.appendChild(toggleSwitch);
+        toggleWrap.appendChild(toggleText);
+        headerRow.appendChild(toggleWrap);
+      });
+
+      block.appendChild(headerRow);
+
+      const textRow = document.createElement('div');
+      textRow.className = 'per-item-text-row';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'engine-text-input';
+      input.placeholder = cfg.placeholder ? cfg.placeholder(i) : ('Item ' + (i + 1));
+      input.value = state[cfg.key][i] || '';
+      input.addEventListener('input', (e) => {
+        state[cfg.key][i] = e.target.value;
+        render();
+      });
+      textRow.appendChild(input);
+      block.appendChild(textRow);
+
+      listWrap.appendChild(block);
+    }
+    panel.appendChild(listWrap);
+  }
+
+  // Live values placeholder (se rellena en render())
+  const live = document.createElement('div');
+  live.className = 'live-values';
+  live.id = 'liveValues';
+  panel.appendChild(live);
+}
+
+function bindWidthSlider() {
+  const slider = document.getElementById('widthSlider');
+  slider.addEventListener('input', (e) => {
+    state.containerWidth = Number(e.target.value);
+    document.getElementById('widthValueLabel').textContent = state.containerWidth + 'px';
+    render();
+  });
+}
+
+function render() {
+  const frame = document.getElementById('previewFrame');
+  frame.style.width = state.containerWidth + 'px';
+
+  const mount = document.getElementById('componentMount');
+  componentConfig.render(state, mount);
+
+  document.getElementById('previewFrameLabel').textContent =
+    componentConfig.describeViewport ? componentConfig.describeViewport(state) : '';
+
+  // Panel de valores en vivo — se recalcula DESPUÉS del render para poder medir el DOM real
+  const liveValuesEl = document.getElementById('liveValues');
+  if (liveValuesEl && componentConfig.computeLiveValues) {
+    const rows = componentConfig.computeLiveValues(state, mount);
+    liveValuesEl.innerHTML = rows.map(r =>
+      '<div class="row"><span class="k">' + r.label + '</span><span class="v' + (r.warn ? ' warn' : '') + '">' + r.value + '</span></div>'
+    ).join('');
+  }
+
+  updateEdgeLines();
+}
+
+// Líneas guía punteadas que marcan el borde izquierdo y derecho del
+// componente dentro de la ventana de preview (motor, genérico).
+function updateEdgeLines() {
+  const windowEl = document.getElementById('viewportWindow');
+  const frameEl = document.getElementById('previewFrame');
+  const lineLeft = document.getElementById('edgeLineLeft');
+  const lineRight = document.getElementById('edgeLineRight');
+  if (!windowEl || !frameEl || !lineLeft || !lineRight) return;
+
+  const winRect = windowEl.getBoundingClientRect();
+  const frameRect = frameEl.getBoundingClientRect();
+  const scrollLeft = windowEl.scrollLeft;
+
+  const leftPx = (frameRect.left - winRect.left) + scrollLeft;
+  const rightPx = (frameRect.right - winRect.left) + scrollLeft;
+
+  lineLeft.style.left = leftPx + 'px';
+  lineRight.style.left = rightPx + 'px';
+}
+
+/* ==========================================================================
+   CONFIG DEL COMPONENTE — Tabs
+   Esto es lo único que cambia cuando se documenta un componente distinto:
+   controles, presets, la función de render y el cálculo de valores en vivo.
+   ========================================================================== */
+
+// Ícono genérico (placeholder decorativo). Usa currentColor para heredar el
+// color del texto en cada estado sin tener que swapear asset por estado.
+const TAB_ICON_SVG = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+  '<rect x="1" y="1" width="22" height="22" rx="6" stroke="currentColor" stroke-width="1.6"/>' +
+  '<circle cx="12" cy="12" r="4" fill="currentColor"/>' +
+  '</svg>';
+
+const LABEL_SETS = {
+  'Corto': ['Inicio', 'Perfil', 'Ajustes', 'Historial', 'Soporte', 'Pagos', 'Tarjetas', 'Movs.', 'Más'],
+  'Medio': ['Inicio', 'Mi perfil', 'Ajustes', 'Historial', 'Soporte', 'Mis pagos', 'Tarjetas', 'Movimientos', 'Más opciones'],
+  'Muy largo': [
+    'Inicio y resumen general de cuenta',
+    'Información completa de mi perfil',
+    'Ajustes avanzados y preferencias',
+    'Historial detallado de movimientos',
+    'Centro de soporte y ayuda',
+    'Pagos programados y recurrentes',
+    'Tarjetas y métodos de pago',
+    'Movimientos y transacciones recientes',
+    'Más opciones y configuración'
+  ]
+};
+
+const tabsConfig = {
+  defaultState() {
+    return {
+      distribution: 'Fixed tabs',
+      tabCount: 3,
+      activeIndex: 0,
+      labelLength: 'Corto',
+      containerWidth: 600,
+      customLabels: Array(9).fill(''),
+      showIcons: Array(9).fill(true),
+      disabledTabs: Array(9).fill(false)
+    };
+  },
+
+  viewportRange: {
+    min: 280,
+    max: 1440,
+    marks: [
+      { value: 320, label: '320 móvil' },
+      { value: 768, label: '768 tablet' },
+      { value: 1024, label: '1024' },
+      { value: 1440, label: '1440 desktop' }
+    ]
+  },
+
+  perItemLabels: {
+    key: 'customLabels',
+    label: 'Etiquetas de tabs',
+    count: (s) => s.tabCount,
+    placeholder: (i) => 'Tab ' + (i + 1),
+    toggles: [
+      { key: 'showIcons', title: 'Mostrar ícono', default: true },
+      { key: 'disabledTabs', title: 'Deshabilitada', default: false }
+    ]
+  },
+
+  controls: [
+    { key: 'distribution', type: 'select', label: 'Distribution', options: ['Fixed tabs', 'Scrolling tabs'] },
+    {
+      key: 'tabCount',
+      type: 'select',
+      label: 'Número de tabs',
+      isNumeric: true,
+      options: (s) => {
+        const max = s.distribution === 'Fixed tabs' ? 3 : 9;
+        return Array.from({ length: max }, (_, i) => i + 1);
+      }
+    },
+    { key: 'labelLength', type: 'select', label: 'Longitud de texto', options: ['Corto', 'Medio', 'Muy largo'] }
+  ],
+
+  onChange(state, changedKey) {
+    // Al cambiar distribution, clamp tabCount y activeIndex a los límites válidos
+    const maxTabs = state.distribution === 'Fixed tabs' ? 3 : 9;
+    if (state.tabCount > maxTabs) state.tabCount = maxTabs;
+    if (state.activeIndex > state.tabCount - 1) state.activeIndex = state.tabCount - 1;
+  },
+
+  presets: [
+    { label: 'Fixed · 1 tab', state: { distribution: 'Fixed tabs', tabCount: 1, activeIndex: 0, labelLength: 'Corto', containerWidth: 375 } },
+    { label: 'Fixed · texto al límite', state: { distribution: 'Fixed tabs', tabCount: 3, activeIndex: 0, labelLength: 'Muy largo', containerWidth: 375 } },
+    { label: 'Fixed · ancho máximo (900px)', state: { distribution: 'Fixed tabs', tabCount: 3, activeIndex: 0, labelLength: 'Corto', containerWidth: 900 } },
+    { label: 'Scrolling · 9 tabs', state: { distribution: 'Scrolling tabs', tabCount: 9, activeIndex: 0, labelLength: 'Corto', containerWidth: 375 } },
+    { label: 'Scrolling · mobile (peek)', state: { distribution: 'Scrolling tabs', tabCount: 5, activeIndex: 0, labelLength: 'Medio', containerWidth: 320 } }
+  ],
+
+  describeViewport(state) {
+    if (state.containerWidth <= 375) return 'móvil (' + state.containerWidth + 'px)';
+    if (state.containerWidth <= 768) return 'tablet vertical (' + state.containerWidth + 'px)';
+    if (state.containerWidth <= 1024) return 'tablet horizontal (' + state.containerWidth + 'px)';
+    return 'desktop (' + state.containerWidth + 'px)';
+  },
+
+  render(state, mount) {
+    const defaultLabels = LABEL_SETS[state.labelLength].slice(0, state.tabCount);
+    const customLabels = state.customLabels || [];
+    const isScrolling = state.distribution === 'Scrolling tabs';
+
+    const bar = document.createElement('div');
+    bar.className = 'tabs-bar ' + (isScrolling ? 'tabs-scrolling' : 'tabs-fixed');
+    bar.id = 'tabsBar';
+
+    defaultLabels.forEach((defaultLabel, i) => {
+      const custom = (customLabels[i] || '').trim();
+      const label = custom || defaultLabel;
+      const showIcon = state.showIcons ? state.showIcons[i] !== false : true;
+      const isDisabled = state.disabledTabs ? state.disabledTabs[i] === true : false;
+      const isActive = i === state.activeIndex && !isDisabled;
+
+      const tab = document.createElement('button');
+      tab.className = 'tab-item' + (isActive ? ' active' : '') + (isDisabled ? ' disabled' : '');
+      tab.title = label;
+      tab.disabled = isDisabled;
+      tab.addEventListener('click', () => {
+        state.activeIndex = i;
+        render();
+      });
+
+      if (showIcon) {
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'tab-icon';
+        iconSpan.innerHTML = TAB_ICON_SVG;
+        tab.appendChild(iconSpan);
+      }
+
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'tab-label';
+      labelSpan.textContent = label;
+      tab.appendChild(labelSpan);
+
+      const indicator = document.createElement('span');
+      indicator.className = 'tab-indicator';
+      tab.appendChild(indicator);
+
+      bar.appendChild(tab);
+    });
+
+    mount.innerHTML = '';
+    mount.appendChild(bar);
+  },
+
+  computeLiveValues(state, mount) {
+    const bar = mount.querySelector('#tabsBar');
+    const rows = [];
+    rows.push({ label: 'Distribution', value: state.distribution });
+    rows.push({ label: 'Tabs visibles', value: state.tabCount });
+
+    if (state.distribution === 'Fixed tabs') {
+      const barWidth = bar ? Math.round(bar.getBoundingClientRect().width) : null;
+      if (barWidth !== null) {
+        const barAtMin = barWidth <= 288;
+        const barAtMax = barWidth >= 480;
+        rows.push({ label: 'Ancho del componente (medido)', value: barWidth + 'px' });
+        rows.push({
+          label: 'Clamp del componente (288–480)',
+          value: barAtMin ? 'en mínimo (288px)' : barAtMax ? 'en máximo (480px)' : 'dentro de rango',
+          warn: barAtMin || barAtMax
+        });
+        if (barAtMin && state.containerWidth < 288) {
+          rows.push({ label: 'Nota', value: 'el componente se sale del contenedor (< 288px)', warn: true });
+        }
+      }
+
+      const firstTab = bar && bar.querySelector('.tab-item');
+      const measuredWidth = firstTab ? Math.round(firstTab.getBoundingClientRect().width) : null;
+      if (measuredWidth !== null) {
+        const atMin = measuredWidth <= 80;
+        const atMax = measuredWidth >= 280;
+        rows.push({ label: 'Ancho real / tab (medido)', value: measuredWidth + 'px' });
+        rows.push({
+          label: 'Estado del clamp / tab',
+          value: atMin ? 'en mínimo (80px)' : atMax ? 'en máximo (280px)' : 'dentro de rango',
+          warn: atMin || atMax
+        });
+      }
+    } else {
+      const overflowing = bar && bar.scrollWidth > bar.clientWidth;
+      rows.push({
+        label: 'Scroll horizontal',
+        value: overflowing ? 'activo' : 'no necesario',
+        warn: overflowing
+      });
+      if (overflowing) {
+        const peek = bar.scrollWidth - bar.clientWidth;
+        rows.push({ label: 'Contenido oculto', value: Math.round(peek) + 'px' });
+      }
+    }
+
+    // Detección real de truncamiento por elipsis en cualquier tab visible
+    let anyTruncated = false;
+    if (bar) {
+      bar.querySelectorAll('.tab-label').forEach(el => {
+        if (el.scrollWidth > el.clientWidth) anyTruncated = true;
+      });
+    }
+    rows.push({ label: 'Texto truncado (elipsis)', value: anyTruncated ? 'sí' : 'no', warn: anyTruncated });
+
+    return rows;
+  }
+};
+
+/* ==========================================================================
+   VENTANA DE PREVIEW — fondo ajustable (motor, genérico)
+   Vive fuera del ciclo de vida del componente activo: no se resetea al
+   cambiar de componente en el sidebar de navegación.
+   ========================================================================== */
+const VIEWPORT_BG_OPTIONS = [
+  { label: 'Background-body-zero', value: '#FFFFFF' },
+  { label: 'Background-body-default', value: '#F5F7F9' },
+  { label: 'Background-body-strong', value: '#D9E0EA' },
+  { label: 'Background-body-soft', value: '#FAFBFC' }
+];
+
+state.viewportBg = VIEWPORT_BG_OPTIONS[0].value;
+
+function buildViewportBgPicker() {
+  const wrap = document.getElementById('viewportBgPicker');
+  wrap.innerHTML = '';
+  VIEWPORT_BG_OPTIONS.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'viewport-bg-swatch' + (state.viewportBg === opt.value ? ' active' : '');
+
+    const dot = document.createElement('span');
+    dot.className = 'swatch-dot';
+    dot.style.background = opt.value;
+
+    const text = document.createElement('span');
+    text.textContent = opt.label;
+
+    btn.appendChild(dot);
+    btn.appendChild(text);
+    btn.addEventListener('click', () => {
+      state.viewportBg = opt.value;
+      document.getElementById('viewportWindow').style.background = opt.value;
+      buildViewportBgPicker();
+    });
+    wrap.appendChild(btn);
+  });
+}
+
+/* ==========================================================================
+   REGISTRO DE COMPONENTES
+   Cada componente nuevo que documentes se agrega aquí con su config.
+   El sidebar de navegación se genera solo a partir de este objeto.
+   ========================================================================== */
+const componentRegistry = {
+  'Tabs': tabsConfig
+  // Próximo componente: 'Chips': chipsConfig,
+};
+
+let activeComponentName = null;
+
+function buildNavSidebar() {
+  const nav = document.getElementById('navSidebar');
+  nav.innerHTML = '';
+
+  const h2 = document.createElement('h2');
+  h2.textContent = 'Componentes';
+  nav.appendChild(h2);
+
+  const list = document.createElement('div');
+  list.className = 'nav-list';
+  Object.keys(componentRegistry).forEach(name => {
+    const btn = document.createElement('button');
+    btn.textContent = name;
+    btn.className = name === activeComponentName ? 'active' : '';
+    btn.addEventListener('click', () => selectComponent(name));
+    list.appendChild(btn);
+  });
+  nav.appendChild(list);
+}
+
+function selectComponent(name) {
+  activeComponentName = name;
+  buildNavSidebar();
+  initEngine(componentRegistry[name]);
+}
+
+buildViewportBgPicker();
+document.getElementById('viewportWindow').style.background = state.viewportBg;
+selectComponent('Tabs');
+window.addEventListener('resize', updateEdgeLines);
+</script>
+</body>
+</html>
