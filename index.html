@@ -65,6 +65,68 @@
     --bc-space-xxx-sm: 2px;                /* real — Space/xxx-sm, padding vertical de cada link */
     --bc-border-weight-md: 1px;            /* real — Border/Weight/md, grosor del anillo de foco */
 
+    /* ======================================================================
+       TOKENS — Chips (component set 1162:5962, archivo 3.4.1-Chips
+       cTn9ipA6fHAPs6WEzrFy8o). Auditoría de solo lectura sobre las 24
+       variantes (Size × State × Selected) + 4 estados del ícono
+       .Chip/delete-button. 0 hardcodes, 0 legacy Styles — audit limpio.
+       ⚠️ CORRECCIÓN: los hex de esta sección se recalcularon una vez.
+       La primera pasada resolvía cada variable caminando su cadena de alias
+       y tomando el primer "modo" disponible de forma arbitraria — pero el
+       archivo de primitivos tiene múltiples modos de marca, y ese primer
+       modo no es necesariamente el aplicado en este archivo. Resultado:
+       varios hex quedaron mal (ej. border-default salió #CACCCE en vez del
+       real #D9E0EA). Los valores de abajo se re-leyeron directo del color
+       ya compuesto en cada nodo (fills[0].color / strokes[0].color), que es
+       la fuente confiable independientemente de cuántos modos tenga la
+       variable. La numeración de spacing/radius/tipografía NO se vio
+       afectada (esos siempre se leyeron directo de propiedades del nodo,
+       nunca por cadena de alias), así que no cambian.
+       ⚠️ Font/Family/body resuelve a "Inter" pero el texto real renderizado
+       (leído directo de fontName, no de la variable) es Poppins. Por
+       decisión de Axel, uso Poppins aquí; pendiente que el equipo corrija
+       la variable.
+       ⚠️ Pressed+Selected=Yes usa Color/Font/Default (texto oscuro) en vez
+       de Color/Font/Primary-Strong como Hover/Focus+Selected=Yes, y no
+       tiene stroke — no lo normalicé, refleja tal cual lo que hay en Figma;
+       posible inconsistencia a confirmar con diseño.
+       ====================================================================== */
+    --chip-color-bg-zero: #FFFFFF;             /* real — Color/Background/Body/Zero */
+    --chip-color-bg-hover: #F0F3F5;            /* real — Color/Background/Body/Hover (también en Focus/Focus-close, cuerpo sin seleccionar) */
+    --chip-color-bg-press: rgba(153,158,165,0.1); /* real — Color/Background/Body/Press */
+    --chip-color-bg-primary-softer: #FEE0EC;   /* real — Color/Background/Primary/Softer (Selected=Yes, CONSTANTE en todos los estados de interacción) */
+    --chip-color-bg-disable: #D9E0EA;          /* real — Color/Background/Body/Disable (Disabled, Selected=No) */
+    --chip-color-bg-disable-selected: #BAC8D7; /* real — fondo DISTINTO para Disabled+Selected=Yes (no es el rosa de Selected, ver Disabled) */
+
+    --chip-color-border-default: #D9E0EA;      /* real — Color/Border/Default */
+    --chip-color-border-primary: #D50057;      /* real — Color/Border/Primary (Selected=Yes, Enabled) */
+    --chip-color-border-primary-strong: #910048; /* real — Color/Border/Primary-Strong (Selected=Yes, Hover/Focus) */
+    --chip-color-border-stronger: #292D32;     /* real — Color/Border/Stronger (anillo de foco, Selected=No) */
+    --chip-color-border-disable: #8697A7;      /* real — Color/Border/Disable */
+
+    --chip-color-font-default: #292D32;        /* real — Color/Font/Default (coincide con el de Tabs; la "diferencia" que reporté antes era el mismo bug de modo arbitrario, no drift real) */
+    --chip-color-font-primary: #D50057;        /* real — Color/Font/Primary */
+    --chip-color-font-primary-strong: #910048; /* real — Color/Font/Primary-Strong */
+    --chip-color-font-disable: #8697A7;        /* real — Color/Font/Disable */
+
+    --chip-color-icon-default: #292D32;        /* real — Color/Icon/Default */
+    --chip-color-icon-primary: #D50057;        /* real — Color/Icon/Primary */
+
+    --chip-space-xxsm: 4px;   /* real — Space/xx-sm, padding interno del ícono de cerrar (ambos tamaños) */
+    --chip-space-xsm: 8px;    /* real — Space/x-sm, gap texto↔ícono y padding V de Medium / padding V... ver por tamaño abajo */
+    --chip-space-sm: 12px;    /* real — Space/sm */
+    --chip-space-md: 16px;    /* real — Space/md */
+    --chip-radius-pill: 999px; /* real — Border/Radius/x-lg */
+    --chip-border-weight: 1px; /* real — Border/Weight/md */
+    --chip-border-weight-focus: 2px; /* real — el borde del CUERPO engrosa a 2px solo en Focus (confirmado leyendo strokeWeight del nodo, Selected=No y Sí) */
+    --chip-focus-ring-inset: 4px; /* real — offset del "Focus ring" interno respecto al borde del chip (nodo rectángulo aparte, x=4/y=4 sobre una caja de 133×46) */
+    --chip-focus-ring-weight: 1px; /* real — stroke propio del Focus ring interno */
+
+    /* Medium: padding 12px 16px (V=sm, H=md), font 16px/22px, ícono cerrar 20×20.
+       Small:  padding 8px 12px (V=x-sm, H=sm), font 14px/19px (Body/Small,
+       token DISTINTO al de Medium, no el mismo resuelto por modo), ícono 16×16.
+       min-width 88px / max-width 280px en ambos tamaños (Anatomía + Propiedades). */
+
     --engine-panel-bg: #1C1C1C;
     --engine-panel-fg: #E8E8E6;
     --engine-accent: #D50057;
@@ -661,6 +723,203 @@
     height: 16px;
     flex-shrink: 0;
     color: var(--bc-color-font-link);
+  }
+
+  /* ======================================================================
+     COMPONENTE — Chips (esto es lo único específico de Chips en todo el
+     CSS). El "State" del componente se fuerza vía clase (no :hover/:active
+     reales) porque la documentación pide un selector explícito de estado,
+     a diferencia de Tabs/Breadcrumb donde el estado surge de interacción
+     real del usuario.
+     ====================================================================== */
+  .chip-el {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    border-radius: var(--chip-radius-pill);
+    border: var(--chip-border-weight) solid var(--chip-color-border-default);
+    background: var(--chip-color-bg-zero);
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-weight: 400;
+    color: var(--chip-color-font-default);
+    min-width: 88px;
+    max-width: 280px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .chip-el:focus { outline: none; } /* el anillo real lo dibuja :focus-visible más abajo */
+
+  .chip-el.chip-medium { padding: 12px 16px; font-size: 16px; line-height: 22px; }
+  .chip-el.chip-small  { padding: 8px 12px;  font-size: 14px; line-height: 19px; }
+
+  /* Gap texto↔ícono vía margin explícito, NO flex `gap` — algunos motores de
+     render (incluido el usado para QA interno de este archivo) no aplican
+     `gap` de forma confiable en contenedores flex, y el resultado se veía
+     con el texto y el ícono de cerrar prácticamente pegados. Con margin el
+     espaciado es explícito y no depende del soporte de esa propiedad. */
+  .chip-label {
+    min-width: 0;
+    flex: 0 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chip-label.has-close { margin-right: var(--chip-space-xsm); }
+
+  .chip-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 50%;
+    box-sizing: border-box;
+    padding: var(--chip-space-xxsm);
+    color: inherit;
+    cursor: pointer;
+  }
+  .chip-close:focus { outline: none; }
+  .chip-medium .chip-close { width: 20px; height: 20px; }
+  .chip-small  .chip-close { width: 16px; height: 16px; }
+  .chip-close svg { width: 100%; height: 100%; display: block; }
+
+  /* ======================================================================
+     Estados — reales vía interacción (:hover, :focus-visible, :active),
+     igual que Tabs/Breadcrumb. El orden de las reglas importa: cada estado
+     pisa al anterior según la prioridad real auditada en Figma.
+     "Focus (close)" no es una clase forzada: ocurre cuando el foco de
+     teclado está genuinamente en el ícono de cerrar (elemento propio,
+     focusable, es el siguiente tab-stop después del cuerpo del chip), y se
+     detecta con :has() para aplicar el fondo del cuerpo sin JS extra.
+     ====================================================================== */
+
+  /* Selected = No.
+     ⚠️ CORRECCIÓN: estas reglas ANTES no excluían .chip-selected, así que
+     por especificidad CSS (misma cantidad de clases/pseudo-clases) le
+     ganaban a la regla base .chip-selected y un chip Selected=Yes en
+     Hover/Focus/Pressed perdía su fondo rosa y tomaba el gris de "no
+     seleccionado" — la variante incorrecta pisando a la correcta. Con
+     :not(.chip-selected) cada bloque queda estrictamente en su carril. */
+  .chip-el:hover:not(.chip-disabled):not(.chip-selected),
+  .chip-el:focus-visible:not(.chip-selected),
+  .chip-el:has(.chip-close:focus-visible):not(.chip-selected) {
+    background: var(--chip-color-bg-hover);
+  }
+  .chip-el:focus-visible {
+    border-color: var(--chip-color-border-stronger);
+    /* El borde del CUERPO engrosa a 2px (no 1px) solo en Focus — confirmado
+       leyendo strokeWeight directo del nodo real, distinto del resto de
+       estados que se quedan en el grosor base de 1px. */
+    border-width: var(--chip-border-weight-focus);
+  }
+  /* "Focus ring" interno: en Figma es un rectángulo APARTE, no un efecto del
+     borde del chip — insetado 4px por cada lado de la caja del chip, con su
+     propio stroke de 1px y el mismo radio de pastilla. Se replica con un
+     ::after absoluto en vez de box-shadow porque box-shadow inset se pega
+     al borde real (0px), no deja el hueco de 4px que sí existe en Figma. */
+  .chip-el:focus-visible::after {
+    content: '';
+    position: absolute;
+    inset: var(--chip-focus-ring-inset);
+    border-radius: inherit;
+    border: var(--chip-focus-ring-weight) solid var(--chip-color-border-stronger);
+    pointer-events: none;
+  }
+  .chip-el.chip-selected:focus-visible::after {
+    border-color: var(--chip-color-border-primary-strong);
+  }
+  .chip-close:focus-visible {
+    box-shadow: 0 0 0 var(--chip-border-weight) var(--chip-color-border-stronger);
+  }
+  .chip-el:active:not(.chip-disabled):not(.chip-selected) {
+    background: var(--chip-color-bg-press);
+    color: var(--chip-color-font-primary);
+  }
+  .chip-el:active:not(.chip-disabled):not(.chip-selected) .chip-close { color: var(--chip-color-font-primary); }
+
+  /* Selected = Yes. El fondo (Primary/Softer) es CONSTANTE en todos los
+     estados de interacción — confirmado leyendo cada variante real, no se
+     toca en ninguna regla de abajo. Solo cambian borde/texto/ícono, y en
+     Focus(close) puntualmente el borde desaparece del todo. */
+  .chip-el.chip-selected {
+    background: var(--chip-color-bg-primary-softer);
+    border-color: var(--chip-color-border-primary);
+    color: var(--chip-color-font-primary);
+    font-weight: 600;
+  }
+  .chip-el.chip-selected .chip-close { color: var(--chip-color-font-primary); }
+  .chip-el.chip-selected .chip-close:focus-visible {
+    box-shadow: 0 0 0 var(--chip-border-weight) var(--chip-color-border-primary-strong);
+  }
+
+  .chip-el.chip-selected:hover:not(.chip-disabled),
+  .chip-el.chip-selected:focus-visible,
+  .chip-el.chip-selected:has(.chip-close:focus-visible) {
+    color: var(--chip-color-font-primary-strong);
+  }
+  .chip-el.chip-selected:hover:not(.chip-disabled) .chip-close,
+  .chip-el.chip-selected:focus-visible .chip-close,
+  .chip-el.chip-selected:has(.chip-close:focus-visible) .chip-close {
+    color: var(--chip-color-font-primary-strong);
+  }
+  /* Borde: Hover/Focus del CUERPO sí lo cambian a Primary-Strong; pero
+     cuando el foco real está en el ícono de cerrar (Focus close) el borde
+     del cuerpo desaparece por completo — dos casos distintos aunque el
+     texto quede igual en ambos. */
+  .chip-el.chip-selected:hover:not(.chip-disabled):not(:has(.chip-close:focus-visible)),
+  .chip-el.chip-selected:focus-visible {
+    border-color: var(--chip-color-border-primary-strong);
+  }
+  .chip-el.chip-selected:has(.chip-close:focus-visible) {
+    border-color: transparent;
+  }
+  /* ⚠️ Pressed+Selected=Yes tal cual está en Figma: texto oscuro (Default,
+     no Primary-Strong) y sin stroke — ver nota en :root. No se normaliza. */
+  .chip-el.chip-selected:active:not(.chip-disabled) {
+    border-color: transparent;
+    color: var(--chip-color-font-default);
+  }
+  .chip-el.chip-selected:active:not(.chip-disabled) .chip-close { color: var(--chip-color-font-default); }
+
+  /* Disabled — modificador booleano propio, se anula explícitamente en
+     cada regla de interacción de arriba con :not(.chip-disabled).
+     ⚠️ CORRECCIÓN: Disabled+Selected=Yes tiene su PROPIO fondo (#BAC8D7),
+     distinto tanto del rosa de Selected como del gris de Disabled sin
+     seleccionar — antes faltaba esta regla y se quedaba con el rosa
+     heredado de .chip-selected. */
+  .chip-el.chip-disabled {
+    cursor: default;
+    color: var(--chip-color-font-disable);
+  }
+  .chip-el.chip-disabled .chip-close { color: var(--chip-color-font-disable); }
+  .chip-el.chip-disabled:not(.chip-selected) {
+    background: var(--chip-color-bg-disable);
+    border-color: transparent;
+  }
+  .chip-el.chip-disabled.chip-selected {
+    background: var(--chip-color-bg-disable-selected);
+    border-color: var(--chip-color-border-disable);
+  }
+
+  .chip-removed-placeholder {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border: 1px dashed var(--chip-color-border-default);
+    border-radius: var(--chip-radius-pill);
+    color: var(--color-font-soft);
+    font-size: 13px;
+  }
+  .chip-restore-btn {
+    border: none;
+    background: none;
+    color: var(--chip-color-font-primary);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
   }
 
 </style>
@@ -1435,6 +1694,271 @@ const breadcrumbConfig = {
 };
 
 /* ==========================================================================
+   CONFIG DEL COMPONENTE — Chips
+   Fuente: 3.4.1-Chips (component set 1162:5962, ícono .Chip/delete-button
+   17729:8730, documentación 17661:7943). Primer corte: CHIP AISLADO con
+   controles globales (decisión de Axel — el "Chips group" con varios chips
+   controlables individualmente queda para una página aparte más adelante).
+
+   Nota de implementación: "Texto del chip" + los toggles Selected / Mostrar
+   close se resuelven reutilizando el mecanismo genérico "perItemLabels" con
+   count fijo en 1 (así el motor ya trae gratis el input de texto + los
+   toggles, sin tocar el motor genérico). Efecto secundario cosmético
+   aceptado: el motor antepone un índice "1." al bloque, igual que haría
+   con una lista real — es inofensivo, queda documentado aquí por si alguien
+   se pregunta por qué aparece un "1." en un componente que no es una lista.
+   ========================================================================== */
+
+// Ícono real de cierre (Vector dentro de .Chip/delete-button, 17729:8672).
+// currentColor para heredar el color del ícono en cada estado/selected sin
+// swapear asset — el color real SÍ cambia por estado (ver Anatomía/props:
+// "Ícono de cerrar" no es personalizable en forma, solo en color heredado).
+const CHIP_CLOSE_ICON_SVG = '<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+  '<path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' +
+  '</svg>';
+
+// Sets de texto para el input libre — igual que Tabs/Breadcrumb, un set
+// "límite" a propósito por encima de 280px de ancho máximo documentado,
+// para poder demostrar el truncamiento con elipsis (Propiedades del
+// componente: "si el contenido excede el ancho máximo del chip -280px-,
+// el texto sobrante se truncará con elipsis").
+const CHIP_TEXT_PRESETS = {
+  corto: 'Filtro',
+  medio: 'Rango de fechas',
+  largo: 'Resultado de búsqueda multiselect con texto muy extenso'
+};
+
+const chipsConfig = {
+  defaultState() {
+    return {
+      size: 'Medium',
+      containerWidth: 400,
+      chipText: [''],
+      selected: [false],
+      showClose: [false],
+      disabled: [false],
+      _chipRemoved: false
+    };
+  },
+
+  viewportRange: {
+    min: 100,
+    max: 800,
+    marks: [
+      { value: 88, label: '88 mín' },
+      { value: 280, label: '280 máx' },
+      { value: 400, label: '400' },
+      { value: 800, label: '800' }
+    ]
+  },
+
+  perItemLabels: {
+    key: 'chipText',
+    label: 'Contenido del chip',
+    count: () => 1,
+    placeholder: () => CHIP_TEXT_PRESETS.corto,
+    // "State" (Enabled/Hover/Focus/Pressed) ya NO es un control: el chip
+    // renderizado abajo es real e interactivo (:hover, :focus-visible,
+    // :active vía CSS, igual que Tabs/Breadcrumb). Solo quedan como
+    // controles explícitos las propiedades que SÍ son props reales del
+    // componente, no estados de interacción transitorios.
+    toggles: [
+      { key: 'selected', title: 'Selected', default: false },
+      { key: 'showClose', title: 'Mostrar close', default: false },
+      { key: 'disabled', title: 'Disabled', default: false }
+    ]
+  },
+
+  controls: [
+    { key: 'size', type: 'select', label: 'Size', options: ['Medium', 'Small'] }
+  ],
+
+  onChange(state) {
+    // Si el chip estaba "eliminado" (clic en el ícono de cerrar) y el
+    // usuario cambia Size, lo traemos de vuelta en vez de dejarlo oculto.
+    state._chipRemoved = false;
+  },
+
+  presets: [
+    { label: 'Texto al mínimo (88px)', state: { size: 'Medium', containerWidth: 400, chipText: ['Sí'], selected: [false], showClose: [false], disabled: [false], _chipRemoved: false } },
+    { label: 'Texto al máximo + elipsis', state: { size: 'Medium', containerWidth: 400, chipText: [CHIP_TEXT_PRESETS.largo], selected: [false], showClose: [false], disabled: [false], _chipRemoved: false } },
+    { label: 'Selected + removible', state: { size: 'Medium', containerWidth: 400, chipText: [CHIP_TEXT_PRESETS.medio], selected: [true], showClose: [true], disabled: [false], _chipRemoved: false } },
+    { label: 'Small · Disabled', state: { size: 'Small', containerWidth: 400, chipText: [CHIP_TEXT_PRESETS.corto], selected: [false], showClose: [false], disabled: [true], _chipRemoved: false } }
+  ],
+
+  describeViewport(state) {
+    return 'El cambio de variante de tamaño es elección manual (contenedor ' + state.containerWidth + 'px)';
+  },
+
+  render(state, mount) {
+    const text = (state.chipText && state.chipText[0] || '').trim() || CHIP_TEXT_PRESETS.corto;
+    const isSelected = !!(state.selected && state.selected[0]);
+    const showClose = !!(state.showClose && state.showClose[0]);
+    const isDisabled = !!(state.disabled && state.disabled[0]);
+
+    mount.innerHTML = '';
+
+    // El chip "eliminado" (clic real en el ícono de cerrar) se representa
+    // como placeholder con restauración manual, en vez de dejar el preview
+    // vacío sin explicación — fiel al comportamiento documentado ("elimina
+    // el chip por completo") sin perder la capacidad de seguir probando.
+    if (state._chipRemoved) {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'chip-removed-placeholder';
+      placeholder.textContent = 'Chip eliminado. ';
+      const restoreBtn = document.createElement('button');
+      restoreBtn.type = 'button';
+      restoreBtn.className = 'chip-restore-btn';
+      restoreBtn.textContent = 'Restaurar';
+      restoreBtn.addEventListener('click', () => {
+        state._chipRemoved = false;
+        render();
+      });
+      placeholder.appendChild(restoreBtn);
+      mount.appendChild(placeholder);
+      updateChipLiveValues(state, mount, { note: 'chip eliminado (clic en el ícono de cerrar)' });
+      return;
+    }
+
+    const chip = document.createElement('div');
+    chip.className = 'chip-el chip-' + state.size.toLowerCase() + (isSelected ? ' chip-selected' : '') + (isDisabled ? ' chip-disabled' : '');
+    chip.id = 'chipEl';
+    chip.setAttribute('role', 'button');
+    chip.setAttribute('aria-pressed', String(isSelected));
+    chip.title = text;
+    chip.tabIndex = isDisabled ? -1 : 0;
+
+    const label = document.createElement('span');
+    label.className = 'chip-label' + (showClose && !isDisabled ? ' has-close' : '');
+    label.textContent = text;
+    chip.appendChild(label);
+
+    // Al hacer clic en cualquier parte del chip que no sea el ícono de
+    // cerrar (o Enter/Space con foco en el chip), alterna Selected — igual
+    // que el componente real (ver Anatomía/Interacciones).
+    function toggleSelected() {
+      if (isDisabled) return;
+      state.selected[0] = !state.selected[0];
+      buildControlsPanel();
+      render();
+    }
+    chip.addEventListener('click', toggleSelected);
+    chip.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        toggleSelected();
+      }
+    });
+
+    // Disabled no expone la acción de eliminar (ver Anatomía: "el chip al
+    // estar deshabilitado no tiene opciones de close").
+    if (showClose && !isDisabled) {
+      const close = document.createElement('span');
+      close.className = 'chip-close';
+      close.innerHTML = CHIP_CLOSE_ICON_SVG;
+      close.tabIndex = 0;
+      close.setAttribute('role', 'button');
+      close.setAttribute('aria-label', 'Eliminar chip');
+      close.addEventListener('click', (e) => {
+        e.stopPropagation(); // no debe además alternar Selected
+        state._chipRemoved = true;
+        render();
+      });
+      close.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          e.stopPropagation();
+          state._chipRemoved = true;
+          render();
+        }
+      });
+      chip.appendChild(close);
+    }
+
+    mount.appendChild(chip);
+
+    // El panel de "valores en vivo" se refresca en cada interacción real
+    // (hover/focus/press), no solo cuando cambian los controles — si no,
+    // quedaría desactualizado apenas el usuario pasa el mouse o da Tab.
+    const closeEl = chip.querySelector('.chip-close');
+    const liveEvents = ['mouseenter', 'mouseleave', 'mousedown', 'mouseup', 'focus', 'blur'];
+    liveEvents.forEach(evt => {
+      chip.addEventListener(evt, () => updateChipLiveValues(state, mount));
+      if (closeEl) closeEl.addEventListener(evt, () => updateChipLiveValues(state, mount));
+    });
+
+    updateChipLiveValues(state, mount);
+  },
+
+  computeLiveValues(state, mount) {
+    // El cálculo real vive en updateChipLiveValues (se dispara también por
+    // eventos de interacción, no solo al final de render()); aquí solo
+    // devolvemos lo último calculado para que el motor genérico tenga algo
+    // que pintar en el primer render.
+    return state._chipLiveRows || [];
+  }
+};
+
+// Fuera del objeto de config a propósito: se llama tanto desde
+// chipsConfig.render() como desde los listeners de interacción real
+// (hover/focus/press), sin pasar por un render() completo del motor —
+// así el anillo de foco/hover no "parpadea" al recalcular valores en vivo.
+function updateChipLiveValues(state, mount, opts) {
+  const chip = mount.querySelector('#chipEl');
+  const rows = [];
+  rows.push({ label: 'Size', value: state.size });
+
+  if (opts && opts.note) {
+    rows.push({ label: 'Estado', value: opts.note, warn: true });
+  } else if (chip) {
+    const closeEl = chip.querySelector('.chip-close');
+    let interactionState = 'Enabled';
+    if (chip.classList.contains('chip-disabled')) {
+      interactionState = 'Disabled';
+    } else if (closeEl && document.activeElement === closeEl) {
+      interactionState = 'Focus (close)';
+    } else if (chip.matches(':active')) {
+      interactionState = 'Pressed';
+    } else if (document.activeElement === chip && chip.matches(':focus-visible')) {
+      interactionState = 'Focus';
+    } else if (chip.matches(':hover')) {
+      interactionState = 'Hover';
+    }
+    rows.push({ label: 'State (real, por interacción)', value: interactionState });
+  }
+
+  const selected = !!(state.selected && state.selected[0]);
+  const showClose = !!(state.showClose && state.showClose[0]);
+  const disabled = !!(state.disabled && state.disabled[0]);
+  rows.push({ label: 'Selected', value: selected ? 'sí' : 'no' });
+  rows.push({ label: 'Show close', value: showClose ? 'sí' : 'no' });
+  rows.push({ label: 'Disabled', value: disabled ? 'sí' : 'no' });
+
+  if (chip) {
+    const w = Math.round(chip.getBoundingClientRect().width);
+    const atMin = w <= 88;
+    const atMax = w >= 280;
+    rows.push({ label: 'Ancho del chip (medido)', value: w + 'px' });
+    rows.push({
+      label: 'Clamp (88–280)',
+      value: atMin ? 'en mínimo (88px)' : atMax ? 'en máximo (280px)' : 'dentro de rango',
+      warn: atMin || atMax
+    });
+    const labelEl = chip.querySelector('.chip-label');
+    const truncated = labelEl ? labelEl.scrollWidth > labelEl.clientWidth : false;
+    rows.push({ label: 'Texto truncado (elipsis)', value: truncated ? 'sí' : 'no', warn: truncated });
+  }
+
+  state._chipLiveRows = rows;
+  const liveValuesEl = document.getElementById('liveValues');
+  if (liveValuesEl) {
+    liveValuesEl.innerHTML = rows.map(r =>
+      '<div class="row"><span class="k">' + r.label + '</span><span class="v' + (r.warn ? ' warn' : '') + '">' + r.value + '</span></div>'
+    ).join('');
+  }
+}
+
+/* ==========================================================================
    VENTANA DE PREVIEW — fondo ajustable (motor, genérico)
    Vive fuera del ciclo de vida del componente activo: no se resetea al
    cambiar de componente en el sidebar de navegación.
@@ -1480,8 +2004,9 @@ function buildViewportBgPicker() {
    ========================================================================== */
 const componentRegistry = {
   'Tabs': tabsConfig,
-  'Breadcrumb': breadcrumbConfig
-  // Próximo componente: 'Chips': chipsConfig,
+  'Breadcrumb': breadcrumbConfig,
+  'Chips': chipsConfig
+  // Próximo: 'Chips group' (varios chips con control individual, ver nota en chipsConfig)
 };
 
 let activeComponentName = null;
