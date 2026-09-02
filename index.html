@@ -125,7 +125,8 @@
     /* Medium: padding 12px 16px (V=sm, H=md), font 16px/22px, ícono cerrar 20×20.
        Small:  padding 8px 12px (V=x-sm, H=sm), font 14px/19px (Body/Small,
        token DISTINTO al de Medium, no el mismo resuelto por modo), ícono 16×16.
-       min-width 88px / max-width 280px en ambos tamaños (Anatomía + Propiedades). */
+       min-width por tamaño (Small 40px, Medium 48px — ver Anatomía) /
+       max-width 280px en ambos tamaños (Propiedades). */
 
     --engine-panel-bg: #1C1C1C;
     --engine-panel-fg: #E8E8E6;
@@ -787,15 +788,16 @@
     font-family: 'Poppins', 'Segoe UI', sans-serif;
     font-weight: 400;
     color: var(--chip-color-font-default);
-    min-width: 88px;
     max-width: 280px;
     cursor: pointer;
     user-select: none;
   }
   .chip-el:focus { outline: none; } /* el anillo real lo dibuja :focus-visible más abajo */
 
-  .chip-el.chip-medium { padding: 12px 16px; font-size: 16px; line-height: 22px; }
-  .chip-el.chip-small  { padding: 8px 12px;  font-size: 14px; line-height: 19px; }
+  /* Ancho mínimo por tamaño (actualizado a pedido de Axel: ya no es un
+     valor único de 88px compartido — cada tamaño tiene su propio mínimo). */
+  .chip-el.chip-medium { padding: 12px 16px; font-size: 16px; line-height: 22px; min-width: 48px; }
+  .chip-el.chip-small  { padding: 8px 12px;  font-size: 14px; line-height: 19px; min-width: 40px; }
 
   /* Gap texto↔ícono vía margin explícito, NO flex `gap` — algunos motores de
      render (incluido el usado para QA interno de este archivo) no aplican
@@ -1802,10 +1804,11 @@ const chipsConfig = {
   },
 
   viewportRange: {
-    min: 100,
+    min: 30,
     max: 800,
     marks: [
-      { value: 88, label: '88 mín' },
+      { value: 40, label: '40 mín (Small)' },
+      { value: 48, label: '48 mín (Medium)' },
       { value: 280, label: '280 máx' },
       { value: 400, label: '400' },
       { value: 800, label: '800' }
@@ -1840,7 +1843,8 @@ const chipsConfig = {
   },
 
   presets: [
-    { label: 'Texto al mínimo (88px)', state: { size: 'Medium', containerWidth: 400, chipText: ['Sí'], selected: [false], showClose: [false], disabled: [false], _chipRemoved: false } },
+    { label: 'Texto al mínimo (Medium 48px)', state: { size: 'Medium', containerWidth: 400, chipText: ['Sí'], selected: [false], showClose: [false], disabled: [false], _chipRemoved: false } },
+    { label: 'Texto al mínimo (Small 40px)', state: { size: 'Small', containerWidth: 400, chipText: ['Sí'], selected: [false], showClose: [false], disabled: [false], _chipRemoved: false } },
     { label: 'Texto al máximo + elipsis', state: { size: 'Medium', containerWidth: 400, chipText: [CHIP_TEXT_PRESETS.largo], selected: [false], showClose: [false], disabled: [false], _chipRemoved: false } },
     { label: 'Selected + removible', state: { size: 'Medium', containerWidth: 400, chipText: [CHIP_TEXT_PRESETS.medio], selected: [true], showClose: [true], disabled: [false], _chipRemoved: false } },
     { label: 'Small · Disabled', state: { size: 'Small', containerWidth: 400, chipText: [CHIP_TEXT_PRESETS.corto], selected: [false], showClose: [false], disabled: [true], _chipRemoved: false } }
@@ -1996,12 +2000,13 @@ function updateChipLiveValues(state, mount, opts) {
 
   if (chip) {
     const w = Math.round(chip.getBoundingClientRect().width);
-    const atMin = w <= 88;
+    const minForSize = state.size === 'Small' ? 40 : 48;
+    const atMin = w <= minForSize;
     const atMax = w >= 280;
     rows.push({ label: 'Ancho del chip (medido)', value: w + 'px' });
     rows.push({
-      label: 'Clamp (88–280)',
-      value: atMin ? 'en mínimo (88px)' : atMax ? 'en máximo (280px)' : 'dentro de rango',
+      label: 'Clamp (' + minForSize + '–280)',
+      value: atMin ? 'en mínimo (' + minForSize + 'px)' : atMax ? 'en máximo (280px)' : 'dentro de rango',
       warn: atMin || atMax
     });
     const labelEl = chip.querySelector('.chip-label');
