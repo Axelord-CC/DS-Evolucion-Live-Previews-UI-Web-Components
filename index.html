@@ -166,22 +166,36 @@
 
   /* ---- Sidebar de navegación de componentes (nuevo, motor genérico) ---- */
   .nav-sidebar {
-    width: 180px;
-    flex: 0 0 180px;
-    background: #141414;
+    width: 140px;
+    flex: 0 0 140px;
+    background: #292D32;
     color: var(--engine-panel-fg);
     height: 100%;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 20px 14px;
     font-size: 13px;
     border-right: 1px solid #2a2a28;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.15s ease, flex-basis 0.15s ease, padding 0.15s ease, border-color 0.15s ease;
+  }
+  .nav-sidebar.collapsed {
+    width: 0;
+    flex: 0 0 0;
+    padding-left: 0;
+    padding-right: 0;
+    border-right-color: transparent;
+    overflow: hidden;
   }
   .nav-sidebar h2 {
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: #9a9a97;
     margin: 0 0 12px;
+    white-space: nowrap;
   }
   .nav-list {
     display: flex;
@@ -189,6 +203,8 @@
     gap: 4px;
   }
   .nav-list button {
+    display: block;
+    width: 100%;
     text-align: left;
     padding: 9px 10px;
     background: transparent;
@@ -198,6 +214,9 @@
     border-radius: 4px;
     font-size: 13px;
     cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .nav-list button:hover { background: #1f1f1d; }
   .nav-list button.active {
@@ -207,30 +226,53 @@
     font-weight: 600;
   }
 
+  .nav-collapse-btn {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--color-border-default);
+    border-radius: 6px;
+    color: var(--color-font-default);
+    cursor: pointer;
+  }
+  .nav-collapse-btn:hover { border-color: var(--engine-accent); color: var(--engine-accent); }
+
   /* ---- Panel de controles (motor, genérico) ---- */
   .controls-panel {
     width: 300px;
     flex: 0 0 300px;
-    background: var(--engine-panel-bg);
-    color: var(--engine-panel-fg);
+    background: var(--color-surface);
+    color: var(--color-font-default);
     height: 100%;
     overflow-y: auto;
     padding: 20px;
     font-size: 13px;
+    border-right: 1px solid var(--color-border-default);
   }
-  .controls-panel-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #ffffff;
+  .controls-panel-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     margin: 0 0 16px;
     padding-bottom: 14px;
-    border-bottom: 1px solid #3a3a38;
+    border-bottom: 1px solid var(--color-border-default);
+  }
+  .controls-panel-title {
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-font-default);
+    margin: 0;
   }
   .controls-panel h2 {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #9a9a97;
+    color: var(--color-font-soft);
     margin: 20px 0 10px;
   }
   .controls-panel h2:first-child { margin-top: 0; }
@@ -238,15 +280,15 @@
   .engine-select {
     width: 100%;
     padding: 9px 10px;
-    background: #262624;
-    color: var(--engine-panel-fg);
-    border: 1px solid #3a3a38;
+    background: #F5F7F9;
+    color: var(--color-font-default);
+    border: 1px solid var(--color-border-default);
     border-radius: 6px;
     font-size: 13px;
     cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%239a9a97'/></svg>");
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%23586979'/></svg>");
     background-repeat: no-repeat;
     background-position: right 12px center;
   }
@@ -275,9 +317,9 @@
   .preset-list button {
     text-align: left;
     padding: 9px 10px;
-    background: #262624;
-    color: var(--engine-panel-fg);
-    border: 1px solid #3a3a38;
+    background: #F5F7F9;
+    color: var(--color-font-default);
+    border: 1px solid var(--color-border-default);
     border-radius: 6px;
     font-size: 12px;
     cursor: pointer;
@@ -294,15 +336,16 @@
     flex-direction: column;
     gap: 8px;
     padding: 10px 0;
-    border-bottom: 1px solid #2a2a28;
+    border-bottom: 1px solid var(--color-border-default);
   }
   .per-item-block:last-child { border-bottom: none; padding-bottom: 0; }
   .per-item-block:first-child { padding-top: 0; }
 
   .per-item-header-row {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
   }
   .per-item-text-row {
     display: flex;
@@ -333,7 +376,7 @@
   .toggle-track {
     position: absolute;
     inset: 0;
-    background: #3a3a38;
+    background: #CBD2D9;
     border-radius: 999px;
     transition: background 0.15s ease;
   }
@@ -344,20 +387,21 @@
     width: 13px;
     height: 13px;
     border-radius: 50%;
-    background: #e8e8e6;
+    background: #FFFFFF;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
     transition: transform 0.15s ease;
   }
   .toggle-switch input:checked ~ .toggle-track { background: var(--engine-accent); }
   .toggle-switch input:checked ~ .toggle-track .toggle-thumb { transform: translateX(13px); }
   .toggle-switch-label {
     font-size: 12px;
-    color: #c9c9c6;
+    color: var(--color-font-soft);
   }
 
   .per-item-text-index {
     width: 14px;
     flex-shrink: 0;
-    color: #9a9a97;
+    color: var(--color-font-soft);
     font-family: var(--engine-mono);
     font-size: 11px;
   }
@@ -365,27 +409,27 @@
     flex: 1;
     min-width: 0;
     padding: 8px 10px;
-    background: #262624;
-    color: var(--engine-panel-fg);
-    border: 1px solid #3a3a38;
+    background: #F5F7F9;
+    color: var(--color-font-default);
+    border: 1px solid var(--color-border-default);
     border-radius: 6px;
     font-size: 12px;
   }
-  .engine-text-input::placeholder { color: #6b6b68; }
+  .engine-text-input::placeholder { color: var(--color-font-soft); }
   .engine-text-input:focus { outline: none; border-color: var(--engine-accent); }
 
   .live-values {
     margin-top: 20px;
     padding-top: 14px;
-    border-top: 1px solid #3a3a38;
+    border-top: 1px solid var(--color-border-default);
     font-family: var(--engine-mono);
     font-size: 11.5px;
     line-height: 1.7;
   }
   .live-values .row { display: flex; justify-content: space-between; gap: 8px; }
-  .live-values .k { color: #9a9a97; }
+  .live-values .k { color: var(--color-font-soft); }
   .live-values .v { color: var(--engine-accent); text-align: right; }
-  .live-values .v.warn { color: var(--engine-warn); }
+  .live-values .v.warn { color: #B45309; }
 
   /* ---- Zona de preview ---- */
   .preview-zone {
@@ -927,7 +971,7 @@
 <body>
 
   <header>
-    <h1 id="headerTitle">Design System Evolución 2.0 - Live Demos</h1>
+    <h1 id="headerTitle">DS Evolución 2.0 - Web - UI Components Live Preview</h1>
     <p>Live previews de componentes (responsive, variantes y casos límite)</p>
   </header>
 
@@ -999,10 +1043,26 @@ function buildControlsPanel() {
   const panel = document.getElementById('controlsPanel');
   panel.innerHTML = '';
 
+  const titleRow = document.createElement('div');
+  titleRow.className = 'controls-panel-title-row';
+
+  const collapseBtn = document.createElement('button');
+  collapseBtn.className = 'nav-collapse-btn';
+  collapseBtn.title = navCollapsed ? 'Mostrar listado de componentes' : 'Ocultar listado de componentes';
+  collapseBtn.innerHTML = navCollapsed ? NAV_CHEVRON_RIGHT_SVG : NAV_CHEVRON_LEFT_SVG;
+  collapseBtn.addEventListener('click', () => {
+    navCollapsed = !navCollapsed;
+    document.getElementById('navSidebar').classList.toggle('collapsed', navCollapsed);
+    buildControlsPanel();
+  });
+  titleRow.appendChild(collapseBtn);
+
   const title = document.createElement('h1');
   title.className = 'controls-panel-title';
   title.textContent = activeComponentName;
-  panel.appendChild(title);
+  titleRow.appendChild(title);
+
+  panel.appendChild(titleRow);
 
   componentConfig.controls.forEach(ctrl => {
     const h2 = document.createElement('h2');
@@ -2010,10 +2070,15 @@ const componentRegistry = {
 };
 
 let activeComponentName = null;
+let navCollapsed = false;
+
+const NAV_CHEVRON_LEFT_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const NAV_CHEVRON_RIGHT_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 function buildNavSidebar() {
   const nav = document.getElementById('navSidebar');
   nav.innerHTML = '';
+  nav.classList.toggle('collapsed', navCollapsed);
 
   const h2 = document.createElement('h2');
   h2.textContent = 'Componentes';
@@ -2021,9 +2086,10 @@ function buildNavSidebar() {
 
   const list = document.createElement('div');
   list.className = 'nav-list';
-  Object.keys(componentRegistry).forEach(name => {
+  Object.keys(componentRegistry).sort((a, b) => a.localeCompare(b, 'es')).forEach(name => {
     const btn = document.createElement('button');
     btn.textContent = name;
+    btn.title = name;
     btn.className = name === activeComponentName ? 'active' : '';
     btn.addEventListener('click', () => selectComponent(name));
     list.appendChild(btn);
