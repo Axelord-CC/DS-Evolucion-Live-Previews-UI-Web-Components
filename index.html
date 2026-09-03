@@ -271,6 +271,7 @@
   }
   .controls-panel h2 {
     font-size: 11px;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--color-font-soft);
@@ -300,8 +301,11 @@
   .slider-row label {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    height: 24px;
     margin-bottom: 6px;
-    font-size: 12px;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-size: 16px;
     color: var(--color-font-default);
   }
   .slider-row label span.value {
@@ -444,10 +448,37 @@
     align-items: center;
   }
 
-  .width-ruler-wrap {
+  .ruler-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
     width: 100%;
     max-width: 1600px;
     margin-bottom: 20px;
+  }
+  .breakpoint-select-wrap {
+    flex: 0 0 118px;
+  }
+  .breakpoint-select-label {
+    display: flex;
+    align-items: center;
+    height: 24px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+    color: var(--color-font-soft);
+  }
+  .breakpoint-select {
+    width: 100%;
+  }
+  .width-ruler-wrap {
+    width: auto;
+    max-width: none;
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
   }
   .ruler-marks {
     position: relative;
@@ -572,10 +603,15 @@
   .tabs-bar.tabs-scrolling {
     overflow-x: auto;
     gap: var(--space-xlg);
+    cursor: grab;
     scrollbar-width: none;    /* Firefox */
     -ms-overflow-style: none; /* Edge legacy */
   }
   .tabs-bar.tabs-scrolling::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+  .tabs-bar.tabs-scrolling.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
 
   .tab-item {
     position: relative;
@@ -982,12 +1018,18 @@
     <div class="controls-panel" id="controlsPanel"></div>
 
     <div class="preview-zone">
-      <div class="width-ruler-wrap">
-        <div class="slider-row">
-          <label>Ancho del contenedor <span class="value" id="widthValueLabel">600px</span></label>
-          <input type="range" id="widthSlider">
+      <div class="ruler-row">
+        <div class="breakpoint-select-wrap">
+          <label class="breakpoint-select-label">Breakpoint</label>
+          <select id="breakpointSelect" class="engine-select breakpoint-select"></select>
         </div>
-        <div class="ruler-marks" id="rulerMarks"></div>
+        <div class="width-ruler-wrap">
+          <div class="slider-row">
+            <label>Ancho del contenedor <span class="value" id="widthValueLabel">600px</span></label>
+            <input type="range" id="widthSlider">
+          </div>
+          <div class="ruler-marks" id="rulerMarks"></div>
+        </div>
       </div>
 
       <div class="viewport-window" id="viewportWindow">
@@ -1039,6 +1081,46 @@ function setupViewportRuler(range) {
     span.style.left = pct + '%';
     marksWrap.appendChild(span);
   });
+}
+
+/* ==========================================================================
+   DROPDOWN DE BREAKPOINTS — motor genérico, no depende del componente activo.
+   Selecciona un ancho preestablecido y mueve el handle del ruler solito.
+   ========================================================================== */
+const RULER_BREAKPOINTS = [320, 360, 375, 440, 768, 1024, 1440];
+
+function buildBreakpointSelect() {
+  const select = document.getElementById('breakpointSelect');
+  select.innerHTML = '';
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Breakpoint';
+  select.appendChild(placeholder);
+
+  RULER_BREAKPOINTS.forEach(bp => {
+    const opt = document.createElement('option');
+    opt.value = bp;
+    opt.textContent = bp + 'px';
+    select.appendChild(opt);
+  });
+
+  select.addEventListener('change', (e) => {
+    if (!e.target.value) return;
+    const slider = document.getElementById('widthSlider');
+    slider.value = Number(e.target.value);
+    // Leemos el valor de vuelta del slider: si el breakpoint excede el
+    // min/max del componente activo, el input range ya lo clampeó solo.
+    state.containerWidth = Number(slider.value);
+    document.getElementById('widthValueLabel').textContent = state.containerWidth + 'px';
+    render();
+  });
+}
+
+function syncBreakpointSelect() {
+  const select = document.getElementById('breakpointSelect');
+  if (!select) return;
+  select.value = RULER_BREAKPOINTS.includes(state.containerWidth) ? String(state.containerWidth) : '';
 }
 
 function buildControlsPanel() {
@@ -1247,6 +1329,7 @@ function render() {
   }
 
   updateEdgeLines();
+  syncBreakpointSelect();
 }
 
 // Líneas guía punteadas que marcan el borde izquierdo y derecho del
@@ -1268,6 +1351,45 @@ function updateEdgeLines() {
   lineLeft.style.left = leftPx + 'px';
   lineRight.style.left = rightPx + 'px';
 }
+
+/* ==========================================================================
+   DRAG-TO-SCROLL — motor genérico. Cualquier componente con overflow-x puede
+   llamar enableDragToScroll(el) sobre su elemento scrollable para permitir
+   arrastrar con click sostenido, además del gesto nativo de trackpad.
+   Los listeners de mousemove/mouseup viven UNA sola vez a nivel documento
+   (no por elemento), para no ir acumulando listeners en cada render().
+   ========================================================================== */
+let dragScrollState = null; // { el, startX, scrollLeft, dragged }
+
+function enableDragToScroll(el) {
+  el.addEventListener('mousedown', (e) => {
+    dragScrollState = { el, startX: e.pageX, scrollLeft: el.scrollLeft, dragged: false };
+    el.classList.add('is-dragging');
+  });
+
+  // Si hubo arrastre real, se cancela el click que dispararía la selección
+  // de tab justo debajo del cursor al soltar.
+  el.addEventListener('click', (e) => {
+    if (dragScrollState && dragScrollState.dragged && dragScrollState.el === el) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  }, true);
+}
+
+document.addEventListener('mousemove', (e) => {
+  if (!dragScrollState) return;
+  const delta = e.pageX - dragScrollState.startX;
+  if (Math.abs(delta) > 4) dragScrollState.dragged = true;
+  dragScrollState.el.scrollLeft = dragScrollState.scrollLeft - delta;
+});
+
+document.addEventListener('mouseup', () => {
+  if (dragScrollState) {
+    dragScrollState.el.classList.remove('is-dragging');
+  }
+  dragScrollState = null;
+});
 
 /* ==========================================================================
    CONFIG DEL COMPONENTE — Tabs
@@ -1417,6 +1539,10 @@ const tabsConfig = {
 
     mount.innerHTML = '';
     mount.appendChild(bar);
+
+    if (isScrolling) {
+      enableDragToScroll(bar);
+    }
   },
 
   computeLiveValues(state, mount) {
@@ -2030,9 +2156,7 @@ function updateChipLiveValues(state, mount, opts) {
    ========================================================================== */
 const VIEWPORT_BG_OPTIONS = [
   { label: 'Background-body-zero', value: '#FFFFFF' },
-  { label: 'Background-body-default', value: '#F5F7F9' },
-  { label: 'Background-body-strong', value: '#D9E0EA' },
-  { label: 'Background-body-soft', value: '#FAFBFC' }
+  { label: 'Background-body-default', value: '#F5F7F9' }
 ];
 
 state.viewportBg = VIEWPORT_BG_OPTIONS[0].value;
@@ -2109,6 +2233,7 @@ function selectComponent(name) {
 }
 
 buildViewportBgPicker();
+buildBreakpointSelect();
 document.getElementById('viewportWindow').style.background = state.viewportBg;
 selectComponent('Tabs');
 window.addEventListener('resize', updateEdgeLines);
